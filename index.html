@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FastFaith – Fasting Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --gold-dim: rgba(201,168,76,0.15);
+    --deep: #0D0D1A;
+    --surface: #12122A;
+    --panel: #1A1A35;
+    --panel2: #20203F;
+    --text: #EDE8DC;
+    --muted: #8887A8;
+    --accent: #6B6BFF;
+    --green: #4ECBA0;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background Stars */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 20%, rgba(107,107,255,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(201,168,76,0.07) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .stars {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 15%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 90% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 10% 90%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.35) 0%, transparent 100%);
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 16px 100px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 32px 0 24px;
+  }
+  .header .crescent {
+    font-size: 48px;
+    line-height: 1;
+    margin-bottom: 8px;
+    animation: glow 3s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%,100% { filter: drop-shadow(0 0 8px var(--gold)); }
+    50% { filter: drop-shadow(0 0 20px var(--gold-light)); }
+  }
+  .header h1 {
+    font-family: 'Amiri', serif;
+    font-size: 2.2rem;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+  .header p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Nav Tabs */
+  .nav {
+    display: flex;
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 5px;
+    margin-bottom: 24px;
+    gap: 4px;
+  }
+  .nav button {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .nav button .icon { font-size: 1.1rem; }
+  .nav button.active {
+    background: linear-gradient(135deg, var(--gold), #A07830);
+    color: var(--deep);
+  }
+
+  /* Sections */
+  .section { display: none; animation: fadeUp 0.4s ease; }
+  .section.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Card */
+  .card {
+    background: var(--panel);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(201,168,76,0.12);
+  }
+  .card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Timer Ring */
+  .timer-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 20px;
+  }
+  .ring-container {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin-bottom: 20px;
+  }
+  .ring-svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--panel2); stroke-width: 10; }
+  .ring-progress {
+    fill: none;
+    stroke: url(#goldGrad);
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 565;
+    stroke-dashoffset: 565;
+    transition: stroke-dashoffset 1s ease;
+  }
+  .ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .timer-display {
+    font-family: 'Amiri', serif;
+    font-size: 2.4rem;
+    color: var(--text);
+    line-height: 1;
+  }
+  .timer-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .timer-percent {
+    font-size: 0.95rem;
+    color: var(--gold);
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .fast-status {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .fast-status .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+  .status-badge.inactive { background: var(--panel2); color: var(--muted); }
+  .status-badge.active { background: rgba(78,203,160,0.15); color: var(--green); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .status-dot.pulse { animation: pulse 1.5s infinite; }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), #A07830);
+    color: var(--deep);
+  }
+  .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
+  .btn-danger {
+    background: rgba(255,80,80,0.12);
+    color: #FF6B6B;
+    border: 1px solid rgba(255,80,80,0.2);
+    margin-top: 10px;
+  }
+  .btn-danger:hover { background: rgba(255,80,80,0.2); }
+  .btn-sm {
+    width: auto;
+    padding: 8px 18px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  /* Setup Form */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .form-select, .form-input {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+  .form-select:focus, .form-input:focus { border-color: var(--gold); }
+  .form-select option { background: var(--panel2); }
+
+  /* Fasting Types */
+  .fast-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .fast-type-btn {
+    background: var(--panel2);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+  }
+  .fast-type-btn:hover { border-color: rgba(201,168,76,0.3); }
+  .fast-type-btn.selected { border-color: var(--gold); background: var(--gold-dim); }
+  .fast-type-btn .ft-icon { font-size: 1.6rem; margin-bottom: 4px; }
+  .fast-type-btn .ft-name { font-size: 0.85rem; font-weight: 700; }
+  .fast-type-btn .ft-desc { font-size: 0.7rem; color: var(--muted); }
+
+  /* Progress */
+  .progress-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .day-dot {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: var(--muted);
+    background: var(--panel2);
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .day-dot.completed { background: linear-gradient(135deg, var(--gold), #A07830); color: var(--deep); }
+  .day-dot.partial { background: rgba(201,168,76,0.3); color: var(--gold); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-box {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 16px 10px;
+    text-align: center;
+    border: 1px solid rgba(201,168,76,0.1);
+  }
+  .stat-val {
+    font-family: 'Amiri', serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 4px; font-weight: 600; }
+
+  /* Log list */
+  .log-list { display: flex; flex-direction: column; gap: 10px; }
+  .log-item {
+    background: var(--panel2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-left: 3px solid var(--gold);
+  }
+  .log-item.incomplete { border-left-color: var(--muted); opacity: 0.7; }
+  .log-date { font-size: 0.8rem; color: var(--muted); }
+  .log-duration { font-family: 'Amiri', serif; font-size: 1.2rem; color: var(--text); }
+  .log-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 10px;
+  }
+  .log-badge.done { background: rgba(78,203,160,0.15); color: var(--green); }
+  .log-badge.missed { background: rgba(255,80,80,0.1); color: #FF6B6B; }
+
+  /* Motivational */
+  .quote-card {
+    background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(107,107,255,0.08));
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .quote-card::before {
+    content: '"';
+    position: absolute;
+    top: -10px; left: 10px;
+    font-family: 'Amiri', serif;
+    font-size: 8rem;
+    color: rgba(201,168,76,0.1);
+    line-height: 1;
+  }
+  .quote-text {
+    font-family: 'Amiri', serif;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text);
+    position: relative;
+    z-index: 1;
+  }
+  .quote-source {
+    font-size: 0.75rem;
+    color: var(--gold);
+    margin-top: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Reminder */
+  .reminder-list { display: flex; flex-direction: column; gap: 10px; }
+  .reminder-item {
+    background: var(--panel2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .reminder-icon { font-size: 1.4rem; }
+  .reminder-text { flex: 1; }
+  .reminder-title { font-size: 0.9rem; font-weight: 700; }
+  .reminder-time { font-size: 0.75rem; color: var(--muted); }
+  .toggle {
+    width: 40px; height: 22px;
+    background: var(--panel);
+    border-radius: 11px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+    border: none;
+    flex-shrink: 0;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--muted);
+    top: 3px; left: 3px;
+    transition: all 0.3s;
+  }
+  .toggle.on { background: rgba(201,168,76,0.3); }
+  .toggle.on::after { left: 21px; background: var(--gold); }
+
+  /* Niyyah (Intention) */
+  .niyyah-area {
+    background: var(--panel2);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'Amiri', serif;
+    font-size: 1rem;
+    color: var(--text);
+    width: 100%;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+  }
+  .niyyah-area:focus { border-color: var(--gold); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    background: var(--panel);
+    border: 1px solid var(--gold);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Bottom padding spacer */
+  .bottom-nav-spacer { height: 20px; }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="crescent">☽</div>
+    <h1>FastFaith</h1>
+    <p>Strengthen your body, elevate your soul</p>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav">
+    <button class="active" onclick="showSection('home')"><span class="icon">⏱</span>Fast</button>
+    <button onclick="showSection('setup')"><span class="icon">⚙️</span>Setup</button>
+    <button onclick="showSection('progress')"><span class="icon">📊</span>Progress</button>
+    <button onclick="showSection('inspire')"><span class="icon">✨</span>Inspire</button>
+  </div>
+
+  <!-- HOME: Active Fast -->
+  <div class="section active" id="home">
+    <div class="fast-status">
+      <span class="status-badge inactive" id="statusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Not Fasting</span>
+      </span>
+    </div>
+
+    <div class="card">
+      <div class="timer-wrap">
+        <div class="ring-container">
+          <svg class="ring-svg" width="200" height="200" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#C9A84C"/>
+                <stop offset="100%" style="stop-color:#E8C97A"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="100" cy="100" r="90"/>
+            <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="90"/>
+          </svg>
+          <div class="ring-center">
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+            <div class="timer-label" id="timerLabel">Ready to fast</div>
+            <div class="timer-percent" id="timerPercent">0%</div>
+          </div>
+        </div>
+
+        <div id="fastInfo" style="text-align:center;margin-bottom:16px;display:none;">
+          <div style="font-size:0.8rem;color:var(--muted);">Fasting until</div>
+          <div style="font-family:'Amiri',serif;font-size:1.3rem;color:var(--gold);" id="fastEnd">--:--</div>
+        </div>
+
+        <button class="btn btn-gold" id="startBtn" onclick="toggleFast()">🌙 Begin Fast</button>
+        <button class="btn btn-danger" id="stopBtn" onclick="endFast()" style="display:none;">End Fast</button>
+      </div>
+    </div>
+
+    <!-- Niyyah -->
+    <div class="card">
+      <div class="card-title">🤲 Set Your Intention (Niyyah)</div>
+      <textarea class="niyyah-area" id="niyyahText" placeholder="I intend to fast for the sake of..."></textarea>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val" id="statStreak">0</div>
+        <div class="stat-lbl">Day Streak</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statTotal">0</div>
+        <div class="stat-lbl">Total Fasts</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statHours">0h</div>
+        <div class="stat-lbl">Total Hours</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="section" id="setup">
+    <div class="card">
+      <div class="card-title">⚡ Choose Fast Type</div>
+      <div class="fast-types">
+        <button class="fast-type-btn selected" onclick="selectFastType(this, 16)" data-hours="16">
+          <div class="ft-icon">⏳</div>
+          <div class="ft-name">16:8</div>
+          <div class="ft-desc">Intermittent</div>
+        </button>
+        <button class="fast-type-btn" onclick="selectFastType(this, 18)" data-hours="18">
+          <div class="ft-icon">🌙</div>
+          <div class="ft-name">18:6</div>
+          <div class="ft-desc">Extended IF</div>
+        </button>
+        <button class="fast-type-btn" onclick="selectFastType(this, 20)" data-hours="20">
+          <div class="ft-icon">🌟</div>
+          <div class="ft-name">20:4</div>
+          <div class="ft-desc">Warrior Fast</div>
+        </button>
+        <button class="fast-type-btn" onclick="selectFastType(this, 24)" data-hours="24">
+          <div class="ft-icon">☀️</div>
+          <div class="ft-name">24h</div>
+          <div class="ft-desc">Full Day</div>
+        </button>
+        <button class="fast-type-btn" onclick="selectFastType(this, 'ramadan')" data-hours="14">
+          <div class="ft-icon">🕌</div>
+          <div class="ft-name">Ramadan</div>
+          <div class="ft-desc">Dawn to Dusk</div>
+        </button>
+        <button class="fast-type-btn" onclick="selectFastType(this, 'custom')" data-hours="custom">
+          <div class="ft-icon">✏️</div>
+          <div class="ft-name">Custom</div>
+          <div class="ft-desc">Set your own</div>
+        </button>
+      </div>
+
+      <div id="customHours" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Custom Duration (hours)</label>
+          <input class="form-input" type="number" id="customHoursInput" placeholder="e.g. 14" min="1" max="72" value="14">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔔 Reminders</div>
+      <div class="reminder-list">
+        <div class="reminder-item">
+          <span class="reminder-icon">🌅</span>
+          <div class="reminder-text">
+            <div class="reminder-title">Start Fast Reminder</div>
+            <div class="reminder-time">Notify me to begin</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="reminder-item">
+          <span class="reminder-icon">💧</span>
+          <div class="reminder-text">
+            <div class="reminder-title">Hydration Check</div>
+            <div class="reminder-time">Every 2 hours</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="reminder-item">
+          <span class="reminder-icon">🌙</span>
+          <div class="reminder-text">
+            <div class="reminder-title">Break Fast Alert</div>
+            <div class="reminder-time">At completion time</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="reminder-item">
+          <span class="reminder-icon">📿</span>
+          <div class="reminder-text">
+            <div class="reminder-title">Dhikr Reminder</div>
+            <div class="reminder-time">Morning & Evening</div>
+          </div>
+          <button class="toggle" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚖️ Sehri & Iftar Times</div>
+      <div class="form-group">
+        <label class="form-label">Sehri / Start Time</label>
+        <input type="time" class="form-input" id="sehriTime" value="05:00">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Iftar / End Time</label>
+        <input type="time" class="form-input" id="iftarTime" value="19:00">
+      </div>
+    </div>
+
+    <button class="btn btn-gold" onclick="saveSettings()">💾 Save Settings</button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="section" id="progress">
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val" id="pStreak">0</div>
+        <div class="stat-lbl">🔥 Streak</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="pTotal">0</div>
+        <div class="stat-lbl">✅ Complete</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="pHours">0</div>
+        <div class="stat-lbl">⏱ Hours</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 This Month</div>
+      <div class="progress-grid" id="progressGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Fast History</div>
+      <div class="log-list" id="logList">
+        <div style="color:var(--muted);text-align:center;padding:20px;font-size:0.9rem;">No fasts recorded yet. Begin your journey! 🌙</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSPIRE -->
+  <div class="section" id="inspire">
+    <div class="quote-card" id="quoteCard">
+      <div class="quote-text" id="quoteText">Loading inspiration...</div>
+      <div class="quote-source" id="quoteSource"></div>
+    </div>
+    <button class="btn btn-gold" onclick="newQuote()" style="margin-bottom:16px;">✨ New Inspiration</button>
+
+    <div class="card">
+      <div class="card-title">🌿 Benefits of Fasting</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:1.4rem;">🧠</span>
+          <div><div style="font-weight:700;font-size:0.9rem;">Mental Clarity</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Fasting boosts brain function and focus through ketone production and neuroplasticity.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:1.4rem;">❤️</span>
+          <div><div style="font-weight:700;font-size:0.9rem;">Heart Health</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Regular fasting supports healthy blood pressure and cholesterol levels.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:1.4rem;">🔄</span>
+          <div><div style="font-weight:700;font-size:0.9rem;">Cellular Renewal</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Autophagy — your body's self-cleaning process — activates during fasting.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:1.4rem;">🌙</span>
+          <div><div style="font-weight:700;font-size:0.9rem;">Spiritual Growth</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Fasting cultivates patience, gratitude, and a deeper connection with the divine.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:1.4rem;">💪</span>
+          <div><div style="font-weight:700;font-size:0.9rem;">Discipline & Willpower</div><div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Each completed fast trains your mind and strengthens your resolve.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📿 Duas for Fasting</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="background:var(--panel2);border-radius:10px;padding:14px;">
+          <div style="font-family:'Amiri',serif;font-size:1.1rem;text-align:right;line-height:1.8;color:var(--gold);margin-bottom:6px;">وَبِصَوْمِ غَدٍ نَّوَيْتُ مِنْ شَهْرِ رَمَضَانَ</div>
+          <div style="font-size:0.8rem;color:var(--muted);">Intention dua for Ramadan fast</div>
+        </div>
+        <div style="background:var(--panel2);border-radius:10px;padding:14px;">
+          <div style="font-family:'Amiri',serif;font-size:1.1rem;text-align:right;line-height:1.8;color:var(--gold);margin-bottom:6px;">اللَّهُمَّ لَكَ صُمْتُ وَبِكَ آمَنْتُ وَعَلَيْكَ تَوَكَّلْتُ</div>
+          <div style="font-size:0.8rem;color:var(--muted);">O Allah, for You I have fasted and in You I believe</div>
+        </div>
+        <div style="background:var(--panel2);border-radius:10px;padding:14px;">
+          <div style="font-family:'Amiri',serif;font-size:1.1rem;text-align:right;line-height:1.8;color:var(--gold);margin-bottom:6px;">اللَّهُمَّ إِنِّي أَسْأَلُكَ بِرَحْمَتِكَ الَّتِي وَسِعَتْ كُلَّ شَيْءٍ</div>
+          <div style="font-size:0.8rem;color:var(--muted);">O Allah, I ask You through Your mercy that encompasses all things</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="goldGradDef" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C9A84C"/>
+      <stop offset="100%" stop-color="#E8C97A"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+// State
+let state = {
+  isFasting: false,
+  startTime: null,
+  duration: 16 * 3600, // seconds
+  fastType: 16,
+  interval: null,
+  logs: [],
+  streak: 0,
+  totalFasts: 0,
+  totalHours: 0,
+};
+
+const quotes = [
+  { text: "Fasting is a shield; it will protect you from the Hellfire and prevent you from sins.", source: "Prophet Muhammad ﷺ (Sahih)" },
+  { text: "Indeed, the patient will be given their reward without account.", source: "Quran 39:10" },
+  { text: "Whoever fasts during Ramadan out of sincere faith and hoping to attain Allah's rewards, his past sins will be forgiven.", source: "Bukhari & Muslim" },
+  { text: "The fast and the Quran are two intercessors for the servant of Allah on the Day of Resurrection.", source: "Ahmad" },
+  { text: "When you fast, remember that Allah sees your struggle and rewards every moment of your patience.", source: "Reminder" },
+  { text: "Every body that nourishes itself on lawful food for forty days, Allah will make the springs of wisdom flow from his heart to his tongue.", source: "Al-Ghazali" },
+  { text: "Fasting is silence of speech, fasting is sight, fasting of hearing, fasting of the hands, fasting of all the senses.", source: "Imam Ali (r.a)" },
+  { text: "The heart that fasts is light, and the heart that is light ascends.", source: "Islamic Wisdom" },
+  { text: "O you who have believed, decreed upon you is fasting as it was decreed upon those before you that you may become righteous.", source: "Quran 2:183" },
+  { text: "Renew your niyyah with every fast. Intention purifies the action and elevates its reward.", source: "Scholars of Islam" },
+];
+
+let quoteIndex = 0;
+
+function newQuote() {
+  quoteIndex = (quoteIndex + 1) % quotes.length;
+  const q = quotes[quoteIndex];
+  document.getElementById('quoteText').textContent = q.text;
+  document.getElementById('quoteSource').textContent = q.source;
+  document.getElementById('quoteCard').style.animation = 'none';
+  setTimeout(() => document.getElementById('quoteCard').style.animation = 'fadeUp 0.4s ease', 10);
+}
+
+function init() {
+  newQuote();
+  quoteIndex = 0;
+  document.getElementById('quoteText').textContent = quotes[0].text;
+  document.getElementById('quoteSource').textContent = quotes[0].source;
+  buildProgressGrid();
+  updateStats();
+  loadFromStorage();
+}
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['home','setup','progress','inspire'].indexOf(id);
+  document.querySelectorAll('.nav button')[idx].classList.add('active');
+  if (id === 'progress') { buildProgressGrid(); renderLogs(); updateStats(); }
+}
+
+function selectFastType(btn, hours) {
+  document.querySelectorAll('.fast-type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('customHours').style.display = hours === 'custom' ? 'block' : 'none';
+  if (hours !== 'custom') state.fastType = hours;
+}
+
+function toggleFast() {
+  if (!state.isFasting) {
+    startFast();
+  }
+}
+
+function startFast() {
+  // Get duration
+  const selected = document.querySelector('.fast-type-btn.selected');
+  let hours = parseInt(selected.dataset.hours);
+  if (isNaN(hours)) {
+    hours = parseInt(document.getElementById('customHoursInput').value) || 16;
+  }
+  state.duration = hours * 3600;
+  state.startTime = Date.now();
+  state.isFasting = true;
+
+  document.getElementById('startBtn').style.display = 'none';
+  document.getElementById('stopBtn').style.display = 'block';
+  document.getElementById('fastInfo').style.display = 'block';
+  document.getElementById('statusBadge').className = 'status-badge active';
+  document.getElementById('statusDot').className = 'status-dot pulse';
+  document.getElementById('statusText').textContent = 'Fasting 🌙';
+  document.getElementById('timerLabel').textContent = 'Time elapsed';
+
+  const endTime = new Date(state.startTime + state.duration * 1000);
+  document.getElementById('fastEnd').textContent = endTime.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+  state.interval = setInterval(updateTimer, 1000);
+  updateTimer();
+  saveToStorage();
+  showToast('🌙 Fast started! May Allah accept it.');
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const remaining = Math.max(0, state.duration - elapsed);
+  const progress = Math.min(1, elapsed / state.duration);
+
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  document.getElementById('timerDisplay').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  const pct = Math.round(progress * 100);
+  document.getElementById('timerPercent').textContent = pct + '%';
+
+  const circumference = 565;
+  const offset = circumference - (circumference * progress);
+  document.getElementById('ringProgress').style.strokeDashoffset = offset;
+
+  if (remaining === 0) {
+    completeFast();
+  }
+}
+
+function endFast(complete = false) {
+  clearInterval(state.interval);
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const hoursCompleted = elapsed / 3600;
+  const completed = elapsed >= state.duration * 0.9 || complete;
+
+  // Log it
+  state.logs.unshift({
+    date: new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}),
+    duration: formatDuration(elapsed),
+    hours: hoursCompleted,
+    completed,
+  });
+  if (completed) {
+    state.totalFasts++;
+    state.totalHours += hoursCompleted;
+    state.streak++;
+  }
+
+  resetTimer();
+  updateStats();
+  saveToStorage();
+  showToast(completed ? '✅ Fast complete! Masha\'Allah!' : '⏹ Fast ended early.');
+}
+
+function completeFast() {
+  endFast(true);
+  showToast('🎉 Fast completed! Alhamdulillah!');
+}
+
+function resetTimer() {
+  state.isFasting = false;
+  state.startTime = null;
+  document.getElementById('startBtn').style.display = 'block';
+  document.getElementById('stopBtn').style.display = 'none';
+  document.getElementById('fastInfo').style.display = 'none';
+  document.getElementById('statusBadge').className = 'status-badge inactive';
+  document.getElementById('statusDot').className = 'status-dot';
+  document.getElementById('statusText').textContent = 'Not Fasting';
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  document.getElementById('timerLabel').textContent = 'Ready to fast';
+  document.getElementById('timerPercent').textContent = '0%';
+  document.getElementById('ringProgress').style.strokeDashoffset = 565;
+}
+
+function formatDuration(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+function updateStats() {
+  document.getElementById('statStreak').textContent = state.streak;
+  document.getElementById('statTotal').textContent = state.totalFasts;
+  document.getElementById('statHours').textContent = Math.round(state.totalHours) + 'h';
+  document.getElementById('pStreak').textContent = state.streak;
+  document.getElementById('pTotal').textContent = state.totalFasts;
+  document.getElementById('pHours').textContent = Math.round(state.totalHours);
+}
+
+function buildProgressGrid() {
+  const grid = document.getElementById('progressGrid');
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const days = ['S','M','T','W','T','F','S'];
+  grid.innerHTML = '';
+  days.forEach(d => {
+    const lbl = document.createElement('div');
+    lbl.className = 'day-dot';
+    lbl.textContent = d;
+    lbl.style.background = 'transparent';
+    lbl.style.fontSize = '0.65rem';
+    lbl.style.color = 'var(--muted)';
+    lbl.style.fontWeight = '700';
+    grid.appendChild(lbl);
+  });
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'day-dot';
+    dot.textContent = i;
+    const logForDay = state.logs.find(l => {
+      const d = new Date(l.date);
+      return d.getDate() === i && d.getMonth() === now.getMonth();
+    });
+    if (logForDay) {
+      dot.classList.add(logForDay.completed ? 'completed' : 'partial');
+    }
+    if (i === now.getDate()) {
+      dot.style.border = '2px solid var(--gold)';
+    }
+    grid.appendChild(dot);
+  }
+}
+
+function renderLogs() {
+  const list = document.getElementById('logList');
+  if (state.logs.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;font-size:0.9rem;">No fasts recorded yet. Begin your journey! 🌙</div>';
+    return;
+  }
+  list.innerHTML = state.logs.slice(0,10).map(l => `
+    <div class="log-item ${l.completed ? '' : 'incomplete'}">
+      <div>
+        <div class="log-duration">${l.duration}</div>
+        <div class="log-date">${l.date}</div>
+      </div>
+      <span class="log-badge ${l.completed ? 'done' : 'missed'}">${l.completed ? '✅ Done' : '⏹ Partial'}</span>
+    </div>
+  `).join('');
+}
+
+function saveSettings() {
+  saveToStorage();
+  showToast('✅ Settings saved!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function saveToStorage() {
+  try {
+    localStorage.setItem('fastfaith', JSON.stringify({
+      logs: state.logs,
+      streak: state.streak,
+      totalFasts: state.totalFasts,
+      totalHours: state.totalHours,
+      isFasting: state.isFasting,
+      startTime: state.startTime,
+      duration: state.duration,
+    }));
+  } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const data = JSON.parse(localStorage.getItem('fastfaith') || '{}');
+    if (data.logs) state.logs = data.logs;
+    if (data.streak !== undefined) state.streak = data.streak;
+    if (data.totalFasts !== undefined) state.totalFasts = data.totalFasts;
+    if (data.totalHours !== undefined) state.totalHours = data.totalHours;
+    if (data.isFasting && data.startTime) {
+      state.startTime = data.startTime;
+      state.duration = data.duration;
+      state.isFasting = true;
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display = 'block';
+      document.getElementById('fastInfo').style.display = 'block';
+      document.getElementById('statusBadge').className = 'status-badge active';
+      document.getElementById('statusDot').className = 'status-dot pulse';
+      document.getElementById('statusText').textContent = 'Fasting 🌙';
+      document.getElementById('timerLabel').textContent = 'Time elapsed';
+      const endTime = new Date(state.startTime + state.duration * 1000);
+      document.getElementById('fastEnd').textContent = endTime.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      state.interval = setInterval(updateTimer, 1000);
+      updateTimer();
+    }
+    updateStats();
+  } catch(e) {}
+}
+
+init();
+</script>
+</body>
+</html>
